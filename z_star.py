@@ -97,7 +97,7 @@ def search(grid, start, end):
     openset.add(start)
 
     while openset:
-        current_pos = min(openset, key=lambda o: o.score)
+        current_pos = min(openset, key=lambda o: (o.score, o.h))
 
         if current_pos.x == end.x and current_pos.y == end.y:
             return reconstruct_path_(current_pos)
