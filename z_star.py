@@ -1,8 +1,7 @@
 from collections import namedtuple
 from pprint import pprint
 import numpy as np
-from path_finding.maps import grid
-
+from roboCV.maps import grid
 
 class Node:
     def __init__(self, y, x, z):
