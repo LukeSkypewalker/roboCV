@@ -1,7 +1,7 @@
 from collections import namedtuple
 from pprint import pprint
-import numpy as np
 from roboCV.maps import grid
+
 
 class Node:
     def __init__(self, y, x, z):
@@ -33,10 +33,10 @@ def get_neighbors_nodes(_map, current_pos, closedset):
 
 
 def is_free(cell, _map, current_pos, visited_set):
-    return is_not_a_wall(cell, _map) and is_not_visited(cell, visited_set) and not is_crossed(cell, current_pos)
+    return is_not_wall(cell, _map) and is_not_visited(cell, visited_set) and is_not_crossed(cell, current_pos)
 
 
-def is_not_a_wall(_position, _map):
+def is_not_wall(_position, _map):
     height = len(_map)
     width = len(_map[0])
     y = _position[0]
@@ -52,14 +52,14 @@ def is_not_visited(cell, closedset):
 
 
 robots = []
-def is_crossed(target_pos, current_pos):
+
+
+def is_not_crossed(target_pos, current_pos):
     for robot in robots:
         for point in robot.path:
-            if is_same_pos(point, target_pos):
-                return True
-    return False
-# or (np.array_equal(point, (target_pos[0], target_pos[pygame_cli_srv], target_pos[2] - pygame_cli_srv)
-#     and np.array_equal(point.parent!!!, (current_pos.y, current_pos.x, current_pos.z + pygame_cli_srv))))
+            if is_same_pos(point, target_pos) or is_x_crosed(target_pos, current_pos, point):
+                return False
+    return True
 
 
 def is_same_pos(a, b):
@@ -68,18 +68,20 @@ def is_same_pos(a, b):
     return False
 
 
-def is_not_xcrossed(a, b):
-    if a.y == b.y and a.x == b.x and a.z == b.z:
-        return True
-    return False
+def is_x_crosed(target_pos, current_pos, point):
+    return (is_same_pos(point.parent, (target_pos[0], target_pos[1], target_pos[2] - 1)) and
+            is_same_pos(point, (current_pos.y, current_pos.x, current_pos.z + 1)))
 
 
 Coords = namedtuple('Coords', 'y x z')
 
 
+# TBC: 8 neighbors is tricky because diagonal movement is x1.4 times longer, but we should stay synchronized
+# So, there are 5 cells, including stay on the same place
 def surround_area(current_pos):
     y, x, z = current_pos.y, current_pos.x, current_pos.z
-    return [(y - 1, x, z + 1), (y + 1, x, z + 1), (y, x - 1, z + 1), (y, x + 1, z + 1)]  # , (y, x, z + pygame_cli_srv)]stay and wait
+    return [(y - 1, x, z + 1), (y, x + 1, z + 1), (y + 1, x, z + 1), (y, x - 1, z + 1),
+            (y, x, z + 1)]  # , (y, x, z + 1)]stay and wait
 
 
 def reconstruct_path_(current):
@@ -87,7 +89,7 @@ def reconstruct_path_(current):
     while current.parent:
         path.append(current)
         current = current.parent
-    path.append(current)
+    # path.append(current)
     return path[::-1]
 
 
@@ -117,21 +119,20 @@ def search(grid, start, end):
                 node.score = node.g + node.h
                 node.parent = current_pos
                 openset.add(node)
-                # print(node)
     return []
 
 
 if __name__ == '__main__':
-    start = Node(1, 8, 0)
-    end = Node(7, 8, 0)
+    start = Node(1, 3, 0)
+    end = Node(6, 3, 0)
     path = search(grid, start, end)
     print('path1')
     pprint(path)
 
     robots.append(Robot(path))
 
-    start = Node(7, 8, 0)
-    end = Node(1, 8, 0)
+    start = Node(6, 3, 0)
+    end = Node(1, 3, 0)
     path2 = search(grid, start, end)
     print('path2')
     pprint(path2)
