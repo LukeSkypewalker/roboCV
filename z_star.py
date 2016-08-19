@@ -53,10 +53,13 @@ def is_same_pos(a, b):
 
 
 def is_not_crossed(target_pos, current_pos):
+    z = target_pos[2]
+
     for robot in robots:
         for point in robot.path:
             if is_same_pos(point, target_pos) or is_x_crosed(target_pos, current_pos, point):
                 return False
+
     return True
 
 
@@ -105,29 +108,27 @@ def search(grid, start, end):
         closedlist.append(current_pos)
 
         for cell in get_neighbor_cells(grid, current_pos, closedlist):
-            new_g = current_pos.g + 1  # current.move_cost(node)
+            if cell[0] == current_pos.y and cell[1] == current_pos.x:
+                move_cost = current_pos.g + 0.5
+            else:
+                move_cost = current_pos.g + 1  # current.move_cost(node)
             if is_in_list(cell, openlist):
                 node = find_node(cell, openlist)
-                if node.g > new_g:
-                    node.g = new_g
+                if node.g > move_cost:
+                    node.g = move_cost
                     node.parent = current_pos
             else:
                 node = Node(*cell)
-                node.g = new_g
+                node.g = move_cost
                 node.h = calc_heuristic(node, end)
                 node.score = node.g + node.h
                 node.parent = current_pos
                 openlist.append(node)
-                print(node)
+                # print(node)
     return []
 
 
-robots = []
-
-
-if __name__ == '__main__':
-    robots.append(Robot('Wall-e', (1, 3), (6, 3)))
-    robots.append(Robot('R2D2', (6, 3), (1, 3)))
+def visualize2(robots):
     map_path = deepcopy(grid)
 
     for robot in robots:
@@ -148,3 +149,74 @@ if __name__ == '__main__':
     plt.xticks(range(len(grid[0])))
     plt.yticks(range(len(grid)))
     plt.show()
+
+
+def visualize(grid, robots):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import matplotlib.animation as animation
+
+    fig2 = plt.figure()
+    plt.grid(True)
+    plt.xticks(range(len(grid[0])))
+    plt.yticks(range(len(grid)))
+
+    frames = []
+    n = max([len(robot.path) for robot in robots])
+    for j in np.arange(n):
+        frame = deepcopy(grid)
+        for i, robot in enumerate(robots):
+            if j < len(robot.path):
+                frame[robot.path[j].y][robot.path[j].x] = i + 2
+            else:
+                frame[robot.path[-1].y][robot.path[-1].x] = i + 2
+
+        frames.append((plt.imshow(frame, interpolation='nearest', cmap='jet'),))
+
+    ani = animation.ArtistAnimation(fig2, frames, interval=500, repeat_delay=0, blit=False)
+    plt.rcParams['animation.ffmpeg_path'] = 'D:\\SOFT\\ffmpeg\\bin\\ffmpeg'
+    FFwriter = animation.FFMpegWriter()
+    ani.save('im.mp4', writer = FFwriter, fps=30)
+    plt.show()
+
+
+if __name__ == '__main__':
+    robots = []
+    m = len(grid)-1
+    n = len(grid[0])-1
+    # TODO: Check for border and obstacles
+    robots.append(Robot('0a', (0, 0), (m, n)))
+    robots.append(Robot('0b', (0, n), (m, 0)))
+    robots.append(Robot('1a', (1, 0), (1, n)))
+    robots.append(Robot('1b', (1, n), (1, 0)))
+    robots.append(Robot('2a', (2, 0), (2, n)))
+    robots.append(Robot('2b', (2, n), (2, 0)))
+    robots.append(Robot('3a', (3, 0), (3, n)))
+    robots.append(Robot('3b', (3, n), (3, 0)))
+    robots.append(Robot('4a', (4, 0), (4, n)))
+    robots.append(Robot('4b', (4, n), (4, 0)))
+    robots.append(Robot('5a', (5, 0), (5, n)))
+    robots.append(Robot('5b', (5, n), (5, 0)))
+    robots.append(Robot('6a', (6, 0), (6, n)))
+    robots.append(Robot('6b', (6, n), (6, 0)))
+    robots.append(Robot('7a', (7, 0), (7, n)))
+    robots.append(Robot('7b', (7, n), (7, 0)))
+    robots.append(Robot('8a', (8, 0), (8, n)))
+    robots.append(Robot('8b', (8, n), (8, 0)))
+    robots.append(Robot('9a', (9, 0), (9, n)))
+    robots.append(Robot('9b', (9, n), (9, 0)))
+    robots.append(Robot('Wall-e', (m, 0), (0, n)))
+    robots.append(Robot('Eva', (m, n), (0, 0)))
+
+    # robots.append(Robot('Wall-e', (0, 0), (19, 29)))
+    # robots.append(Robot('R2D2', (0, 29), (19, 0)))
+    # robots.append(Robot('Zumo', (19, 0), (0, 29)))
+    # robots.append(Robot('Eva', (19, 29), (0, 0)))
+    for robot in robots:
+        start = Node(*robot.src, 0)
+        end = Node(*robot.dst, 0)
+        robot.path = search(grid, start, end)
+        print(robot.name)
+        pprint(robot.path)
+
+    visualize(grid, robots)
