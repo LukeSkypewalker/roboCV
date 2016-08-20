@@ -6,7 +6,7 @@ from roboCV.robot import Robot
 
 
 class Node:
-    def __init__(self, y, x, z):
+    def __init__(self, y, x, z=0):
         self.y = y
         self.x = x
         self.z = z
@@ -16,7 +16,8 @@ class Node:
         self.parent = None
 
     def __repr__(self):
-        return '(%d %d %d %d %d %d)' % (self.y, self.x, self.z, self.g, self.h, self.score)
+        return '(%d %d %d)' % (self.y, self.x, self.z)
+        # return '(%d %d %d %d %d %d)' % (self.y, self.x, self.z, self.g, self.h, self.score)
 
 
 def calc_heuristic(a, b):
@@ -24,18 +25,18 @@ def calc_heuristic(a, b):
     # return sqrt((b.x - a.x)**2 + (b.y - a.y)**2)
 
 
-def get_neighbor_cells(_map, current_pos, closed_list):
+def get_neighbor_cells(_map, current_pos, closed_list, robot):
     return [target_pos for target_pos in surround_area(current_pos)
             if (is_not_wall(target_pos, _map) and
                 not is_in_list(target_pos, closed_list) and
-                is_not_crossed(target_pos, current_pos))]
+                is_not_crossed(current_pos, target_pos, robot))]
 
 
 def is_not_wall(_position, _map):
     height = len(_map)
     width = len(_map[0])
-    y = _position[0]
-    x = _position[1]
+    y = _position.y
+    x = _position.x
     return 0 <= y < height and 0 <= x < width and not _map[y][x]
 
 
@@ -47,25 +48,46 @@ def is_in_list(pos, list):
 
 
 def is_same_pos(a, b):
-    if a.y == b[0] and a.x == b[1] and a.z == b[2]:
+    if a.y == b.y and a.x == b.x and a.z == b.z:
         return True
     return False
 
 
-def is_not_crossed(target_pos, current_pos):
-    z = target_pos[2]
+def is_not_crossed(current_pos, target_pos, this_robot):
+    z = target_pos.z
 
     for robot in robots:
-        for point in robot.path:
-            if is_same_pos(point, target_pos) or is_x_crosed(target_pos, current_pos, point):
-                return False
 
+        if robot == this_robot:
+            continue
+
+        point = robot.path[z] if z < len(robot.path) else robot.path[-1]
+        # print(z, point, current_pos, target_pos)
+
+        if is_same_pos(Coords(point.y, point.x, z), target_pos):
+            # print('alarm', point, target_pos)
+            return False
+
+        if z < len(robot.path):
+            if is_x_crosed(target_pos, current_pos, point):
+                return False
     return True
 
 
+# def is_not_crossed2(target_pos, current_pos):
+#     z = target_pos.z
+#
+#     for robot in robots:
+#         for point in robot.path:
+#             if is_same_pos(point, target_pos) or is_x_crosed(target_pos, current_pos, point):
+#                 return False
+#
+#     return True
+
+
 def is_x_crosed(target_pos, current_pos, point):
-    return (is_same_pos(point.parent, (target_pos[0], target_pos[1], target_pos[2] - 1)) and
-            is_same_pos(point, (current_pos.y, current_pos.x, current_pos.z + 1)))
+    return (is_same_pos(point.parent, Coords(target_pos.y, target_pos.x, target_pos.z - 1)) and
+            is_same_pos(point, Coords(current_pos.y, current_pos.x, current_pos.z + 1)))
 
 
 Coords = namedtuple('Coords', 'y x z')
@@ -75,14 +97,18 @@ Coords = namedtuple('Coords', 'y x z')
 # So, there are 5 cells, including stay on the same place
 def surround_area(current_pos):
     y, x, z = current_pos.y, current_pos.x, current_pos.z
-    return [(y - 1, x, z + 1), (y, x + 1, z + 1), (y + 1, x, z + 1), (y, x - 1, z + 1), (y, x, z + 1)]
+    return [Coords(y - 1, x, z + 1),
+            Coords(y, x + 1, z + 1),
+            Coords(y + 1, x, z + 1),
+            Coords(y, x - 1, z + 1),
+            Coords(y, x, z + 1)]
 
 
-def reconstruct_path_(current):
+def reconstruct_path_(current_pos):
     path = []
-    while current.parent:
-        path.append(current)
-        current = current.parent
+    while current_pos.parent:
+        path.append(current_pos)
+        current_pos = current_pos.parent
     return path[::-1]
 
 
@@ -93,7 +119,9 @@ def find_node(cell, list):
     return None
 
 
-def search(grid, start, end):
+def search(grid, robot):
+    start = robot.path[0]
+    end = robot.dst
     openlist = []
     closedlist = []
     openlist.append(start)
@@ -107,11 +135,12 @@ def search(grid, start, end):
         openlist.remove(current_pos)
         closedlist.append(current_pos)
 
-        for cell in get_neighbor_cells(grid, current_pos, closedlist):
-            if cell[0] == current_pos.y and cell[1] == current_pos.x:
+        for cell in get_neighbor_cells(grid, current_pos, closedlist, robot):
+            if cell.y == current_pos.y and cell.x == current_pos.x:
                 move_cost = current_pos.g + 0.5
             else:
                 move_cost = current_pos.g + 1  # current.move_cost(node)
+
             if is_in_list(cell, openlist):
                 node = find_node(cell, openlist)
                 if node.g > move_cost:
@@ -124,31 +153,7 @@ def search(grid, start, end):
                 node.score = node.g + node.h
                 node.parent = current_pos
                 openlist.append(node)
-                # print(node)
     return []
-
-
-def visualize2(robots):
-    map_path = deepcopy(grid)
-
-    for robot in robots:
-
-        start = Node(*robot.src, 0)
-        end = Node(*robot.dst, 0)
-        robot.path = search(grid, start, end)
-        print(robot.name)
-        pprint(robot.path)
-
-        for point in robot.path:
-            map_path[point.y][point.x] += 1
-
-    import matplotlib.pyplot as plt
-    plt.figure(1)
-    plt.imshow(map_path, interpolation='nearest', cmap='Blues')
-    plt.grid(True)
-    plt.xticks(range(len(grid[0])))
-    plt.yticks(range(len(grid)))
-    plt.show()
 
 
 def visualize(grid, robots):
@@ -176,47 +181,31 @@ def visualize(grid, robots):
     ani = animation.ArtistAnimation(fig2, frames, interval=500, repeat_delay=0, blit=False)
     plt.rcParams['animation.ffmpeg_path'] = 'D:\\SOFT\\ffmpeg\\bin\\ffmpeg'
     FFwriter = animation.FFMpegWriter()
-    ani.save('im.mp4', writer = FFwriter, fps=30)
+    ani.save('im.mp4', writer=FFwriter, fps=30)
     plt.show()
 
 
 if __name__ == '__main__':
-    robots = []
-    m = len(grid)-1
-    n = len(grid[0])-1
+    m = len(grid) - 1
+    n = len(grid[0]) - 1
     # TODO: Check for border and obstacles
-    robots.append(Robot('0a', (0, 0), (m, n)))
-    robots.append(Robot('0b', (0, n), (m, 0)))
-    robots.append(Robot('1a', (1, 0), (1, n)))
-    robots.append(Robot('1b', (1, n), (1, 0)))
-    robots.append(Robot('2a', (2, 0), (2, n)))
-    robots.append(Robot('2b', (2, n), (2, 0)))
-    robots.append(Robot('3a', (3, 0), (3, n)))
-    robots.append(Robot('3b', (3, n), (3, 0)))
-    robots.append(Robot('4a', (4, 0), (4, n)))
-    robots.append(Robot('4b', (4, n), (4, 0)))
-    robots.append(Robot('5a', (5, 0), (5, n)))
-    robots.append(Robot('5b', (5, n), (5, 0)))
-    robots.append(Robot('6a', (6, 0), (6, n)))
-    robots.append(Robot('6b', (6, n), (6, 0)))
-    robots.append(Robot('7a', (7, 0), (7, n)))
-    robots.append(Robot('7b', (7, n), (7, 0)))
-    robots.append(Robot('8a', (8, 0), (8, n)))
-    robots.append(Robot('8b', (8, n), (8, 0)))
-    robots.append(Robot('9a', (9, 0), (9, n)))
-    robots.append(Robot('9b', (9, n), (9, 0)))
-    robots.append(Robot('Wall-e', (m, 0), (0, n)))
-    robots.append(Robot('Eva', (m, n), (0, 0)))
+    robots = []
+    bots = []
+    # bots.append(Robot('Wall-e', Node(0, 0), Node(m, n)))
+    # bots.append(Robot('Eva', Node(m, n), Node(0, 0)))
+    # robots.append(Robot('Zumo', Node(m, 0), Node(0, n)))
+    # robots.append(Robot('R2D2', Node(0, n), Node(m, 0)))
 
-    # robots.append(Robot('Wall-e', (0, 0), (19, 29)))
-    # robots.append(Robot('R2D2', (0, 29), (19, 0)))
-    # robots.append(Robot('Zumo', (19, 0), (0, 29)))
-    # robots.append(Robot('Eva', (19, 29), (0, 0)))
-    for robot in robots:
-        start = Node(*robot.src, 0)
-        end = Node(*robot.dst, 0)
-        robot.path = search(grid, start, end)
+    for i in range(10 + 1):
+        bots.append(Robot('a' + str(i), Node(m - i, 0), Node(i, n)))
+        bots.append(Robot('b' + str(i), Node(i, n), Node(m - i, 0)))
+        # bots.append(Robot('a' + str(i), Node(m - i, 1), Node(i, n-1)))
+        # bots.append(Robot('b' + str(i), Node(i, n-1), Node(m - i, 1)))
+
+    for robot in bots:
         print(robot.name)
+        path = search(grid, robot)
+        [robot.path.append(point) for point in path]
         pprint(robot.path)
-
+        robots.append(robot)
     visualize(grid, robots)
