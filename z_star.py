@@ -87,11 +87,6 @@ def is_x_crosed(target_pos, current_pos, point):
             is_same_pos(point, Coords(current_pos.y, current_pos.x, current_pos.z + 1)))
 
 
-def calc_heuristic(a, b):
-    return abs(b.y - a.y) + abs(b.x - a.x)
-    # return sqrt((b.x - a.x)**2 + (b.y - a.y)**2)
-
-
 def reconstruct_path(current_pos):
     path = []
     while current_pos.parent:
@@ -109,7 +104,6 @@ def find_node(cell, list):
 
 def calc_heuristic(a, b):
     return abs(b.y - a.y) + abs(b.x - a.x)
-    # return sqrt((b.x - a.x)**2 + (b.y - a.y)**2)
 
 
 def search(grid, robot):
@@ -159,20 +153,11 @@ if __name__ == '__main__':
     # TODO: Check for borders and obstacles before creating the robot
     robots = []
     bots = []
-    # bots.append(Robot('Wall-e', Node(0, 0), Node(m, n)))
-    # bots.append(Robot('Eva', Node(m, n), Node(0, 0)))
-    # robots.append(Robot('Zumo', Node(m, 0), Node(0, n)))
-    # robots.append(Robot('R2D2', Node(0, n), Node(m, 0)))
 
-    for i in range(10 + 1):
+    for i in range(4 + 1):
         bots.append(Robot('a' + str(i), Node(m - i, 0),     Node(i,     n)))
         bots.append(Robot('b' + str(i), Node(i,     n),     Node(m - i, 0)))
-        # bots.append(Robot('c' + str(i), Node(m - i, 2),     Node(i,     n - 2)))
-        # bots.append(Robot('d' + str(i), Node(i,     n - 2), Node(m - i, 2)))
-        # bots.append(Robot('e' + str(i), Node(m - i, 4),     Node(i,     n-4)))
-        # bots.append(Robot('f' + str(i), Node(i,     n-4),   Node(m - i, 4)))
-        # bots.append(Robot('g' + str(i), Node(m - i, 6),     Node(i,     n-6)))
-        # bots.append(Robot('h' + str(i), Node(i,     n-6),   Node(m - i, 6)))
+
     for robot in bots:
         print(robot.name)
         path = search(grid, robot)

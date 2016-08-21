@@ -26,5 +26,5 @@ def visualize(grid, robots):
     ani = animation.ArtistAnimation(fig2, frames, interval=500, repeat_delay=0, blit=False)
     plt.rcParams['animation.ffmpeg_path'] = 'D:\\SOFT\\ffmpeg\\bin\\ffmpeg'
     FFwriter = animation.FFMpegWriter()
-    ani.save('im.mp4', writer=FFwriter, fps=30)
+    # ani.save('im.mp4', writer=FFwriter, fps=30)
     plt.show()
