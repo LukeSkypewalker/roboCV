@@ -164,12 +164,15 @@ if __name__ == '__main__':
     # robots.append(Robot('Zumo', Node(m, 0), Node(0, n)))
     # robots.append(Robot('R2D2', Node(0, n), Node(m, 0)))
 
-    for i in range(12 + 1):
-        bots.append(Robot('a' + str(i), Node(m - i, 0), Node(i, n)))
-        bots.append(Robot('b' + str(i), Node(i, n), Node(m - i, 0)))
-        bots.append(Robot('c' + str(i), Node(m - i, 1), Node(i, n-1)))
-        bots.append(Robot('d' + str(i), Node(i, n-1), Node(m - i, 1)))
-
+    for i in range(10 + 1):
+        bots.append(Robot('a' + str(i), Node(m - i, 0),     Node(i,     n)))
+        bots.append(Robot('b' + str(i), Node(i,     n),     Node(m - i, 0)))
+        # bots.append(Robot('c' + str(i), Node(m - i, 2),     Node(i,     n - 2)))
+        # bots.append(Robot('d' + str(i), Node(i,     n - 2), Node(m - i, 2)))
+        # bots.append(Robot('e' + str(i), Node(m - i, 4),     Node(i,     n-4)))
+        # bots.append(Robot('f' + str(i), Node(i,     n-4),   Node(m - i, 4)))
+        # bots.append(Robot('g' + str(i), Node(m - i, 6),     Node(i,     n-6)))
+        # bots.append(Robot('h' + str(i), Node(i,     n-6),   Node(m - i, 6)))
     for robot in bots:
         print(robot.name)
         path = search(grid, robot)
